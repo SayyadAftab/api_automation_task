@@ -1,0 +1,20 @@
+{
+  "name": "restful-booker-api-automation",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Minimal Playwright TypeScript API automation for Restful Booker",
+  "scripts": {
+    "test": "playwright test",
+    "test:report": "playwright test --reporter=html && playwright show-report",
+    "test:headed": "playwright test --headed",
+    "test:ping": "playwright test tests/ping",
+    "test:auth": "playwright test tests/auth",
+    "test:booking": "playwright test tests/booking",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.51.0",
+    "@types/node": "^22.13.0",
+    "typescript": "^5.7.3"
+  }
+}
