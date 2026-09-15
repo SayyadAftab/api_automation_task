@@ -5,6 +5,23 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Branch to run tests against
+        required: true
+        default: main
+        type: string
+      test_suite:
+        description: Test suite to run
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - ping
+          - auth
+          - booking
 
 jobs:
   test:
@@ -15,6 +32,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.branch || github.ref }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -29,7 +48,13 @@ jobs:
         run: npm run typecheck
 
       - name: Run API tests
-        run: npm test
+        run: |
+          case "${{ github.event_name == 'workflow_dispatch' && inputs.test_suite || 'all' }}" in
+            ping)    npm run test:ping ;;
+            auth)    npm run test:auth ;;
+            booking) npm run test:booking ;;
+            *)       npm test ;;
+          esac
         env:
           BASE_URL: https://restful-booker.herokuapp.com
           API_USERNAME: admin
