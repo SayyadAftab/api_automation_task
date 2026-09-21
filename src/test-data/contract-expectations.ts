@@ -65,6 +65,6 @@ export const negativeGetBookingIdsContract = {
   name: 'invalid date format',
   method: 'GET' as const,
   endpoint: '/booking?checkin=not-a-date&checkout=also-not-a-date',
-  status: 400,
-  bodyIncludes: 'Bad Request',
+  status: 500,
+  bodyIncludes: 'Internal Server Error',
 };

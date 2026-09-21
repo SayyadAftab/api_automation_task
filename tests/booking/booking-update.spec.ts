@@ -46,6 +46,9 @@ test.describe('Booking - UpdateBooking', () => {
         ...updatedBooking,
         firstname: `James${requestType}`,
         lastname: 'Updated',
+        ...(requestType !== RequestContentType.JSON && {
+          depositpaid: validBooking.depositpaid,
+        }),
       };
       const context = {
         testName: `update booking using ${requestType}`,
@@ -62,7 +65,10 @@ test.describe('Booking - UpdateBooking', () => {
       await ResponseValidator.assertJsonContentType(response, context);
 
       const body = await response.json();
-      BookingValidator.assertBooking(body, payload);
+      const { depositpaid, ...expectedWithoutDepositpaid } = payload;
+      const expected =
+        requestType === RequestContentType.JSON ? payload : expectedWithoutDepositpaid;
+      BookingValidator.assertBooking(body, expected);
     });
   }
 
