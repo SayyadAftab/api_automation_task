@@ -1,5 +1,21 @@
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(
+      `Missing required environment variable: ${name}. Copy .env.example to .env and set the value.`,
+    );
+  }
+  return value;
+}
+
 export const env = {
-  baseUrl: process.env.BASE_URL ?? 'https://restful-booker.herokuapp.com',
-  username: process.env.API_USERNAME ?? 'admin',
-  password: process.env.API_PASSWORD ?? 'password123',
+  baseUrl: requireEnv('BASE_URL'),
+  username: requireEnv('API_USERNAME'),
+  password: requireEnv('API_PASSWORD'),
+  invalidUsername: requireEnv('API_INVALID_USERNAME'),
+  invalidPassword: requireEnv('API_INVALID_PASSWORD'),
 };

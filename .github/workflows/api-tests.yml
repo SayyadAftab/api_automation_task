@@ -47,6 +47,16 @@ jobs:
       - name: TypeScript check
         run: npm run typecheck
 
+      - name: Create .env from secrets
+        run: |
+          cat <<EOF > .env
+          BASE_URL=${{ secrets.BASE_URL }}
+          API_USERNAME=${{ secrets.API_USERNAME }}
+          API_PASSWORD=${{ secrets.API_PASSWORD }}
+          API_INVALID_USERNAME=${{ secrets.API_INVALID_USERNAME }}
+          API_INVALID_PASSWORD=${{ secrets.API_INVALID_PASSWORD }}
+          EOF
+
       - name: Run API tests
         run: |
           case "${{ github.event_name == 'workflow_dispatch' && inputs.test_suite || 'all' }}" in
@@ -55,10 +65,6 @@ jobs:
             booking) npm run test:booking ;;
             *)       npm test ;;
           esac
-        env:
-          BASE_URL: https://restful-booker.herokuapp.com
-          API_USERNAME: admin
-          API_PASSWORD: password123
 
       - name: Upload Playwright report
         if: always()

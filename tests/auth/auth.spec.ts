@@ -1,12 +1,13 @@
 import { test, expect } from '../../src/fixtures/api.fixture';
+import { env } from '../../src/config/env';
 import { ResponseValidator } from '../../src/validators/response.validator';
 
 test.describe('Auth - CreateToken', () => {
   test('returns token for valid credentials', async ({ authClient }) => {
     const context = { testName: 'valid credentials', method: 'POST', endpoint: '/auth' };
     const response = await authClient.postAuth({
-      username: 'admin',
-      password: 'password123',
+      username: env.username,
+      password: env.password,
     });
 
     ResponseValidator.assertExactStatus(response, context, 200);
@@ -19,7 +20,10 @@ test.describe('Auth - CreateToken', () => {
 
   test('returns Bad credentials for invalid login', async ({ authClient }) => {
     const context = { testName: 'invalid login', method: 'POST', endpoint: '/auth' };
-    const response = await authClient.postAuth({ username: 'wrong', password: 'wrong' });
+    const response = await authClient.postAuth({
+      username: env.invalidUsername,
+      password: env.invalidPassword,
+    });
 
     ResponseValidator.assertExactStatus(response, context, 200);
     const body = await response.json();
@@ -29,7 +33,7 @@ test.describe('Auth - CreateToken', () => {
 
   test('does not return token when password is missing', async ({ authClient }) => {
     const context = { testName: 'missing password', method: 'POST', endpoint: '/auth' };
-    const response = await authClient.postAuth({ username: 'admin' });
+    const response = await authClient.postAuth({ username: env.username });
 
     ResponseValidator.assertExactStatus(response, context, 200);
     const body = await response.json();

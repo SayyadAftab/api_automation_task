@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Restful Booker API",
-    "description": "Postman collection mirroring all 36 Playwright API automation tests for Restful Booker (https://restful-booker.herokuapp.com).\n\n**Run Playwright tests:**\n- `npm test` — full suite (36 tests)\n- `npm run test:ping` — health check\n- `npm run test:auth` — auth tests\n- `npm run test:booking` — booking tests\n- `npm run test:report` — run with HTML report\n- `npm run typecheck` — TypeScript validation\n\n**Variables:** Set `baseUrl`, `username`, `password`. Pre-request scripts create `token` and `bookingId` when needed.",
+    "description": "Postman collection mirroring all 36 Playwright API automation tests for Restful Booker.\n\n**Run Playwright tests:**\n- `npm test` — full suite (36 tests)\n- `npm run test:ping` — health check\n- `npm run test:auth` — auth tests\n- `npm run test:booking` — booking tests\n- `npm run test:report` — run with HTML report\n- `npm run typecheck` — TypeScript validation\n\n**Variables:** Copy `.env.example` to `.env`, fill in values, then mirror them in Postman as `baseUrl`, `username`, `password`, `invalidUsername`, and `invalidPassword`. Pre-request scripts create `token` and `bookingId` when needed.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -109,7 +109,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"username\": \"wrong\",\n    \"password\": \"wrong\"\n}",
+              "raw": "{\n    \"username\": \"{{invalidUsername}}\",\n    \"password\": \"{{invalidPassword}}\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": "{{baseUrl}}/auth"
@@ -142,7 +142,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"username\": \"admin\"\n}",
+              "raw": "{\n    \"username\": \"{{username}}\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": "{{baseUrl}}/auth"
@@ -1030,8 +1030,8 @@
             "auth": {
               "type": "basic",
               "basic": [
-                { "key": "username", "value": "admin", "type": "string" },
-                { "key": "password", "value": "password123", "type": "string" }
+                { "key": "username", "value": "{{username}}", "type": "string" },
+                { "key": "password", "value": "{{password}}", "type": "string" }
               ]
             },
             "method": "PUT",
@@ -1370,8 +1370,8 @@
             "auth": {
               "type": "basic",
               "basic": [
-                { "key": "username", "value": "admin", "type": "string" },
-                { "key": "password", "value": "password123", "type": "string" }
+                { "key": "username", "value": "{{username}}", "type": "string" },
+                { "key": "password", "value": "{{password}}", "type": "string" }
               ]
             },
             "method": "PATCH",
@@ -1625,8 +1625,8 @@
             "auth": {
               "type": "basic",
               "basic": [
-                { "key": "username", "value": "admin", "type": "string" },
-                { "key": "password", "value": "password123", "type": "string" }
+                { "key": "username", "value": "{{username}}", "type": "string" },
+                { "key": "password", "value": "{{password}}", "type": "string" }
               ]
             },
             "method": "DELETE",
@@ -1663,9 +1663,11 @@
     }
   ],
   "variable": [
-    { "key": "baseUrl", "value": "https://restful-booker.herokuapp.com" },
-    { "key": "username", "value": "admin" },
-    { "key": "password", "value": "password123" },
+    { "key": "baseUrl", "value": "" },
+    { "key": "username", "value": "" },
+    { "key": "password", "value": "" },
+    { "key": "invalidUsername", "value": "" },
+    { "key": "invalidPassword", "value": "" },
     { "key": "token", "value": "" },
     { "key": "bookingId", "value": "" }
   ]

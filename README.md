@@ -12,17 +12,20 @@ Playwright + TypeScript API automation framework for the [Restful Booker API](ht
 ```bash
 cd restful-booker-api-automation
 npm install
+cp .env.example .env
 ```
 
-Optional environment overrides:
+Fill in all values in `.env` before running tests (do not commit `.env`):
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `BASE_URL` | `https://restful-booker.herokuapp.com` | API base URL |
-| `API_USERNAME` | `admin` | Auth username |
-| `API_PASSWORD` | `password123` | Auth password |
+| Variable | Description |
+|----------|-------------|
+| `BASE_URL` | API base URL |
+| `API_USERNAME` | Valid auth username |
+| `API_PASSWORD` | Valid auth password |
+| `API_INVALID_USERNAME` | Invalid username for negative auth tests |
+| `API_INVALID_PASSWORD` | Invalid password for negative auth tests |
 
-Create a local `.env` file only if you need custom values (do not commit it).
+For GitHub Actions, add the same keys as repository secrets. The workflow creates a `.env` file from those secrets at runtime.
 
 ## Run tests (npm scripts)
 
@@ -67,10 +70,8 @@ npx playwright test --list
 # Debug a failing test
 npx playwright test tests/auth/auth.spec.ts --debug
 
-# Override base URL for one run
+# Override config for one run (edit .env or set env vars before running)
 npx playwright test --config=playwright.config.ts
-# (set BASE_URL env var before running, e.g. on Windows PowerShell)
-# $env:BASE_URL="https://restful-booker.herokuapp.com"; npx playwright test
 ```
 
 ## Project structure
@@ -80,7 +81,7 @@ restful-booker-api-automation/
 ├── playwright.config.ts          # Playwright runner config
 ├── tsconfig.json                 # TypeScript config
 ├── src/
-│   ├── config/env.ts             # Base URL and credentials
+│   ├── config/env.ts             # Loads .env and exposes config
 │   ├── fixtures/api.fixture.ts   # Shared clients + authToken fixture
 │   ├── clients/                  # HTTP clients (auth, booking, ping)
 │   ├── builders/                 # JSON / XML / form body builders
@@ -98,11 +99,24 @@ restful-booker-api-automation/
 
 | Layer | Role |
 |-------|------|
-| **Fixtures** | Inject `authClient`, `bookingClient`, `pingClient`, and `authToken` |
+| **Fixtures** | Inject `authClient`, `bookingClient`, `pingClient`, and worker-scoped `authToken` (one login per worker) |
 | **Clients** | HTTP calls via Playwright `request` context |
 | **Builders** | Serialize booking payloads (JSON, XML, URL-encoded) |
 | **Validators** | Strict status, content-type, and body assertions |
 | **Tests** | Specs grouped by API area |
+
+## Test execution order
+
+Playwright runs tests in ordered **projects** with `fullyParallel: true` and `workers: 2`:
+
+| Project | Specs | Runs after |
+|---------|-------|------------|
+| `ping` | Health check | — |
+| `auth` | Token creation | `ping` passes |
+| `booking-public` | Create, get, get IDs | `ping` passes |
+| `booking-protected` | Update, patch, delete | `auth` passes |
+
+If **ping** fails, all other projects are skipped. If **auth** fails, only `booking-protected` is skipped; create/get tests still run.
 
 ## Contract testing policy
 
