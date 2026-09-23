@@ -1,14 +1,14 @@
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+
 export interface ApiCallContext {
   testName: string;
-  method: string;
+  method: HttpMethod;
   endpoint: string;
 }
 
 export interface ContractExpectation {
   status: number;
-  contentType?: string;
   bodyIncludes?: string;
-  bodyExcludes?: string;
 }
 
 export interface NegativeContractCase {

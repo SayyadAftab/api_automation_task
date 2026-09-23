@@ -1,35 +1,6 @@
-import { APIResponse, expect } from '@playwright/test';
+import { APIResponse } from '@playwright/test';
+import { formatFailure } from '../helpers/failure-format.helper';
 import { ApiCallContext, ContractExpectation } from '../types/contract.types';
-
-function formatFailure(
-  context: ApiCallContext,
-  reason: string,
-  expected: string,
-  actual: string,
-  responseBody: string,
-): string {
-  return [
-    '-------------------------------------------',
-    'API TEST FAILURE',
-    '-------------------------------------------',
-    `Test: ${context.testName}`,
-    '',
-    'Endpoint:',
-    `${context.method} ${context.endpoint}`,
-    '',
-    reason,
-    '',
-    'Expected:',
-    expected,
-    '',
-    'Actual:',
-    actual,
-    '',
-    'Actual Response Body:',
-    responseBody || '(empty)',
-    '-------------------------------------------',
-  ].join('\n');
-}
 
 export class ContractValidator {
   static async assertContract(
@@ -39,7 +10,6 @@ export class ContractValidator {
   ): Promise<void> {
     const actualStatus = response.status();
     const responseBody = await response.text();
-    const actualContentType = response.headers()['content-type'] ?? '';
 
     if (actualStatus !== expected.status) {
       throw new Error(
@@ -48,18 +18,6 @@ export class ContractValidator {
           'Failure Reason:\nHTTP status code mismatch',
           `HTTP ${expected.status}`,
           `HTTP ${actualStatus}`,
-          responseBody,
-        ),
-      );
-    }
-
-    if (expected.contentType && !actualContentType.includes(expected.contentType)) {
-      throw new Error(
-        formatFailure(
-          context,
-          'Failure Reason:\nContent-Type mismatch',
-          expected.contentType,
-          actualContentType || '(missing)',
           responseBody,
         ),
       );
@@ -76,41 +34,64 @@ export class ContractValidator {
         ),
       );
     }
+  }
 
-    if (expected.bodyExcludes && responseBody.includes(expected.bodyExcludes)) {
+  static async assertExactStatus(
+    response: APIResponse,
+    context: ApiCallContext,
+    expectedStatus: number,
+  ): Promise<void> {
+    const actualStatus = response.status();
+    if (actualStatus !== expectedStatus) {
+      const responseBody = await response.text();
       throw new Error(
         formatFailure(
           context,
-          `Failure Reason:\nResponse body must NOT contain "${expected.bodyExcludes}"`,
-          `Body excludes: ${expected.bodyExcludes}`,
-          `Body: ${responseBody}`,
+          'Failure Reason:\nHTTP status code mismatch',
+          `HTTP ${expectedStatus}`,
+          `HTTP ${actualStatus}`,
           responseBody,
         ),
       );
     }
   }
 
-  static assertExactStatus(
-    response: APIResponse,
-    context: ApiCallContext,
-    expectedStatus: number,
-  ): void {
-    const actualStatus = response.status();
-    expect(
-      actualStatus,
-      `Expected HTTP status ${expectedStatus} but received ${actualStatus} for ${context.method} ${context.endpoint} (${context.testName})`,
-    ).toBe(expectedStatus);
-  }
-
-  static assertContentType(
+  static async assertContentType(
     response: APIResponse,
     context: ApiCallContext,
     expectedContentType: string,
-  ): void {
+  ): Promise<void> {
     const actual = response.headers()['content-type'] ?? '';
-    expect(
-      actual.includes(expectedContentType),
-      `Expected Content-Type '${expectedContentType}' but received '${actual || '(missing)'}' for ${context.method} ${context.endpoint} (${context.testName})`,
-    ).toBeTruthy();
+    if (!actual.includes(expectedContentType)) {
+      const responseBody = await response.text();
+      throw new Error(
+        formatFailure(
+          context,
+          'Failure Reason:\nContent-Type mismatch',
+          expectedContentType,
+          actual || '(missing)',
+          responseBody,
+        ),
+      );
+    }
+  }
+
+  static async assertBodyEquals(
+    response: APIResponse,
+    context: ApiCallContext,
+    expectedBody: string,
+  ): Promise<void> {
+    const actualBody = await response.text();
+    if (actualBody !== expectedBody) {
+      throw new Error(
+        formatFailure(
+          context,
+          'Failure Reason:\nResponse body mismatch',
+          expectedBody,
+          actualBody,
+          actualBody,
+        ),
+      );
+    }
   }
 }

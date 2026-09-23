@@ -1,30 +1,39 @@
-import { APIResponse, expect } from '@playwright/test';
+import { APIResponse } from '@playwright/test';
+import { formatFailure } from '../helpers/failure-format.helper';
 import { AcceptContentType } from '../types/content-type.types';
 import { ApiCallContext } from '../types/contract.types';
 import { ContractValidator } from './contract.validator';
 
 export class ResponseValidator {
-  static assertExactStatus(
+  static async assertExactStatus(
     response: APIResponse,
     context: ApiCallContext,
     expectedStatus: number,
-  ): void {
-    ContractValidator.assertExactStatus(response, context, expectedStatus);
+  ): Promise<void> {
+    await ContractValidator.assertExactStatus(response, context, expectedStatus);
   }
 
   static async assertJsonContentType(
     response: APIResponse,
     context: ApiCallContext,
   ): Promise<void> {
-    ContractValidator.assertContentType(response, context, 'application/json');
+    await ContractValidator.assertContentType(response, context, 'application/json');
   }
 
   static async assertContract(
     response: APIResponse,
     context: ApiCallContext,
-    expected: { status: number; contentType?: string; bodyIncludes?: string },
+    expected: { status: number; bodyIncludes?: string },
   ): Promise<void> {
     await ContractValidator.assertContract(response, context, expected);
+  }
+
+  static async assertBodyEquals(
+    response: APIResponse,
+    context: ApiCallContext,
+    expectedBody: string,
+  ): Promise<void> {
+    await ContractValidator.assertBodyEquals(response, context, expectedBody);
   }
 
   static async assertResponseFormat(
@@ -36,17 +45,33 @@ export class ResponseValidator {
 
     if (accept === AcceptContentType.JSON) {
       await this.assertJsonContentType(response, context);
-      expect(
-        () => JSON.parse(body),
-        `Expected valid JSON body for ${context.method} ${context.endpoint}`,
-      ).not.toThrow();
+      try {
+        JSON.parse(body);
+      } catch {
+        throw new Error(
+          formatFailure(
+            context,
+            'Failure Reason:\nResponse body is not valid JSON',
+            'Valid JSON',
+            'Invalid JSON',
+            body,
+          ),
+        );
+      }
       return;
     }
 
     const isXml = body.trim().startsWith('<?xml') || body.includes('<booking>');
-    expect(
-      isXml,
-      `Expected XML body for ${context.method} ${context.endpoint} but received: ${body.slice(0, 120)}`,
-    ).toBeTruthy();
+    if (!isXml) {
+      throw new Error(
+        formatFailure(
+          context,
+          'Failure Reason:\nResponse body is not valid XML',
+          'Valid XML booking document',
+          `Body preview: ${body.slice(0, 120)}`,
+          body,
+        ),
+      );
+    }
   }
 }

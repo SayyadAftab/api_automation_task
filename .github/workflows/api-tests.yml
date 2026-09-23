@@ -12,16 +12,21 @@ on:
         required: true
         default: main
         type: string
-      test_suite:
-        description: Test suite to run
+      test_tag:
+        description: Test tag to run
         required: true
-        default: all
+        default: '@regression'
         type: choice
         options:
-          - all
-          - ping
-          - auth
-          - booking
+          - '@regression'
+          - '@healthcheck'
+          - '@auth'
+          - '@createbooking'
+          - '@getbooking'
+          - '@getbookingids'
+          - '@updatebooking'
+          - '@patchbooking'
+          - '@deletebooking'
 
 jobs:
   test:
@@ -58,13 +63,7 @@ jobs:
           EOF
 
       - name: Run API tests
-        run: |
-          case "${{ github.event_name == 'workflow_dispatch' && inputs.test_suite || 'all' }}" in
-            ping)    npm run test:ping ;;
-            auth)    npm run test:auth ;;
-            booking) npm run test:booking ;;
-            *)       npm test ;;
-          esac
+        run: npx playwright test --grep "${{ github.event_name == 'workflow_dispatch' && inputs.test_tag || '@regression' }}"
 
       - name: Upload Playwright report
         if: always()

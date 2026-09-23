@@ -4,12 +4,13 @@ import {
   AcceptContentType,
   RequestContentType,
 } from '../types/content-type.types';
-import { BookingPayload, CreateBookingResponse } from '../types/booking.types';
+import { AuthTokenRetry } from '../helpers/auth-token.retry';
+import { BookingPayload } from '../types/booking.types';
 import { BaseClient } from './base.client';
 
 export class BookingClient extends BaseClient {
-  constructor(request: APIRequestContext) {
-    super(request);
+  constructor(request: APIRequestContext, authTokenRetry?: AuthTokenRetry) {
+    super(request, authTokenRetry);
   }
 
   async createBooking(
@@ -41,16 +42,21 @@ export class BookingClient extends BaseClient {
   }
 
   async getBookingIds(query?: Record<string, string>): Promise<APIResponse> {
-    const params = query ? `?${new URLSearchParams(query).toString()}` : '';
-    return this.request.get(this.url(`/booking${params}`));
+    return this.send({
+      method: 'GET',
+      path: '/booking',
+      query,
+    });
   }
 
   async getBooking(
     id: number | string,
     accept: AcceptContentType = AcceptContentType.JSON,
   ): Promise<APIResponse> {
-    return this.request.get(this.url(`/booking/${id}`), {
-      headers: { Accept: accept },
+    return this.send({
+      method: 'GET',
+      path: `/booking/${id}`,
+      accept,
     });
   }
 
@@ -99,9 +105,5 @@ export class BookingClient extends BaseClient {
       cookieToken: options.token,
       basicAuth: options.basicAuth,
     });
-  }
-
-  async parseCreateResponse(response: APIResponse): Promise<CreateBookingResponse> {
-    return response.json();
   }
 }

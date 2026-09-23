@@ -1,4 +1,5 @@
 import { test } from '../../src/fixtures/api.fixture';
+import { apiContext } from '../../src/helpers/api-context.helper';
 import { AcceptContentType, RequestContentType } from '../../src/types/content-type.types';
 import { updatedBooking, validBooking } from '../../src/test-data/booking.data';
 import { BookingValidator } from '../../src/validators/booking.validator';
@@ -13,98 +14,108 @@ const updateContentTypeCases = [
 test.describe('Booking - UpdateBooking', () => {
   let bookingId: number;
 
-  test.beforeEach(async ({ bookingClient }) => {
-    const createResponse = await bookingClient.createBooking(
-      RequestContentType.JSON,
-      { ...validBooking, firstname: 'Update', lastname: 'Target' },
-    );
-    bookingId = (await createResponse.json()).bookingid;
+  test.beforeEach(async ({ createBooking }) => {
+    const created = await createBooking({ firstname: 'Update', lastname: 'Target' });
+    bookingId = created.id;
   });
 
-  test('negative: update without auth returns 403', async ({ bookingClient }) => {
-    const context = {
-      testName: 'update without auth',
-      method: 'PUT',
-      endpoint: `/booking/${bookingId}`,
-    };
+  test(
+    'negative: update without auth returns 403',
+    { tag: ['@regression', '@updatebooking'] },
+    async ({ bookingClient }) => {
+      const context = apiContext('update without auth', 'PUT', `/booking/${bookingId}`);
 
-    const response = await bookingClient.updateBooking(
-      bookingId,
-      RequestContentType.JSON,
-      updatedBooking,
-    );
+      const response = await test.step('Update booking without auth', async () =>
+        bookingClient.updateBooking(bookingId, RequestContentType.JSON, updatedBooking),
+      );
 
-    ResponseValidator.assertExactStatus(response, context, 403);
-  });
+      await test.step('Assert 403 status', async () => {
+        await ResponseValidator.assertExactStatus(response, context, 403);
+      });
+    },
+  );
 
   for (const requestType of updateContentTypeCases) {
-    test(`positive: update booking using ${requestType}`, async ({
-      bookingClient,
-      authToken,
-    }) => {
-      const payload = {
-        ...updatedBooking,
-        firstname: `James${requestType}`,
-        lastname: 'Updated',
-        ...(requestType !== RequestContentType.JSON && {
-          depositpaid: validBooking.depositpaid,
-        }),
-      };
-      const context = {
-        testName: `update booking using ${requestType}`,
-        method: 'PUT',
-        endpoint: `/booking/${bookingId}`,
-      };
+    test(
+      `positive: update booking using ${requestType}`,
+      { tag: ['@regression', '@updatebooking'] },
+      async ({ bookingClient, authToken }) => {
+        const payload = {
+          ...updatedBooking,
+          firstname: `James${requestType}`,
+          lastname: 'Updated',
+          ...(requestType !== RequestContentType.JSON && {
+            depositpaid: validBooking.depositpaid,
+          }),
+        };
+        const context = apiContext(
+          `update booking using ${requestType}`,
+          'PUT',
+          `/booking/${bookingId}`,
+        );
 
-      const response = await bookingClient.updateBooking(bookingId, requestType, payload, {
-        token: authToken,
-        accept: AcceptContentType.JSON,
-      });
+        const response = await test.step(`Update booking using ${requestType}`, async () =>
+          bookingClient.updateBooking(bookingId, requestType, payload, {
+            token: authToken,
+            accept: AcceptContentType.JSON,
+          }),
+        );
 
-      ResponseValidator.assertExactStatus(response, context, 200);
-      await ResponseValidator.assertJsonContentType(response, context);
+        await test.step('Assert update response', async () => {
+          await ResponseValidator.assertExactStatus(response, context, 200);
+          await ResponseValidator.assertJsonContentType(response, context);
 
-      const body = await response.json();
-      const { depositpaid, ...expectedWithoutDepositpaid } = payload;
-      const expected =
-        requestType === RequestContentType.JSON ? payload : expectedWithoutDepositpaid;
-      BookingValidator.assertBooking(body, expected);
-    });
+          const body = await response.json();
+          const responseBody = JSON.stringify(body);
+          const { depositpaid, ...expectedWithoutDepositpaid } = payload;
+          const expected =
+            requestType === RequestContentType.JSON ? payload : expectedWithoutDepositpaid;
+          BookingValidator.assertBooking(body, expected, context, responseBody);
+        });
+      },
+    );
   }
 
-  test('positive: update booking using JSON with basic auth', async ({ bookingClient }) => {
-    const payload = { ...updatedBooking, firstname: 'JamesBasic' };
-    const context = {
-      testName: 'update booking using JSON with basic auth',
-      method: 'PUT',
-      endpoint: `/booking/${bookingId}`,
-    };
+  test(
+    'positive: update booking using JSON with basic auth',
+    { tag: ['@regression', '@updatebooking'] },
+    async ({ bookingClient }) => {
+      const payload = { ...updatedBooking, firstname: 'JamesBasic' };
+      const context = apiContext(
+        'update booking using JSON with basic auth',
+        'PUT',
+        `/booking/${bookingId}`,
+      );
 
-    const response = await bookingClient.updateBooking(
-      bookingId,
-      RequestContentType.JSON,
-      payload,
-      { basicAuth: true },
-    );
+      const response = await test.step('Update booking with basic auth', async () =>
+        bookingClient.updateBooking(bookingId, RequestContentType.JSON, payload, {
+          basicAuth: true,
+        }),
+      );
 
-    ResponseValidator.assertExactStatus(response, context, 200);
-    BookingValidator.assertBooking(await response.json(), payload);
-  });
+      await test.step('Assert update response', async () => {
+        await ResponseValidator.assertExactStatus(response, context, 200);
+        const body = await response.json();
+        BookingValidator.assertBooking(body, payload, context, JSON.stringify(body));
+      });
+    },
+  );
 
-  test('negative: update invalid booking id returns 405', async ({ bookingClient, authToken }) => {
-    const context = {
-      testName: 'update invalid booking id',
-      method: 'PUT',
-      endpoint: '/booking/999999999',
-    };
+  test(
+    'negative: update invalid booking id returns 405',
+    { tag: ['@regression', '@updatebooking'] },
+    async ({ bookingClient, authToken }) => {
+      const context = apiContext('update invalid booking id', 'PUT', '/booking/999999999');
 
-    const response = await bookingClient.updateBooking(
-      999999999,
-      RequestContentType.JSON,
-      updatedBooking,
-      { token: authToken },
-    );
+      const response = await test.step('Update non-existent booking', async () =>
+        bookingClient.updateBooking(999999999, RequestContentType.JSON, updatedBooking, {
+          token: authToken,
+        }),
+      );
 
-    ResponseValidator.assertExactStatus(response, context, 405);
-  });
+      await test.step('Assert 405 status', async () => {
+        await ResponseValidator.assertExactStatus(response, context, 405);
+      });
+    },
+  );
 });

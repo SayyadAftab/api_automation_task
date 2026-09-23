@@ -7,6 +7,9 @@ export class PingClient extends BaseClient {
   }
 
   ping() {
-    return this.request.get(this.url('/ping'));
+    return this.send({
+      method: 'GET',
+      path: '/ping',
+    });
   }
 }

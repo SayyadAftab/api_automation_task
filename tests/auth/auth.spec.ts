@@ -1,42 +1,76 @@
-import { test, expect } from '../../src/fixtures/api.fixture';
+import { test } from '../../src/fixtures/api.fixture';
 import { env } from '../../src/config/env';
+import { apiContext } from '../../src/helpers/api-context.helper';
+import { AuthValidator } from '../../src/validators/auth.validator';
 import { ResponseValidator } from '../../src/validators/response.validator';
 
 test.describe('Auth - CreateToken', () => {
-  test('returns token for valid credentials', async ({ authClient }) => {
-    const context = { testName: 'valid credentials', method: 'POST', endpoint: '/auth' };
-    const response = await authClient.postAuth({
-      username: env.username,
-      password: env.password,
-    });
+  test(
+    'returns token for valid credentials',
+    { tag: ['@regression', '@auth'] },
+    async ({ authClient }) => {
+      const context = apiContext('valid credentials', 'POST', '/auth');
 
-    ResponseValidator.assertExactStatus(response, context, 200);
-    await ResponseValidator.assertJsonContentType(response, context);
+      const response = await test.step('Send POST /auth with valid credentials', async () =>
+        authClient.postAuth({
+          username: env.username,
+          password: env.password,
+        }),
+      );
 
-    const body = await response.json();
-    expect(body.token).toEqual(expect.any(String));
-    expect(body.token.length).toBeGreaterThan(0);
-  });
+      await test.step('Assert status and token response', async () => {
+        await ResponseValidator.assertExactStatus(response, context, 200);
+        await ResponseValidator.assertJsonContentType(response, context);
 
-  test('returns Bad credentials for invalid login', async ({ authClient }) => {
-    const context = { testName: 'invalid login', method: 'POST', endpoint: '/auth' };
-    const response = await authClient.postAuth({
-      username: env.invalidUsername,
-      password: env.invalidPassword,
-    });
+        const body = await response.json();
+        const responseBody = JSON.stringify(body);
+        AuthValidator.assertSuccessToken(body, context, responseBody);
+      });
+    },
+  );
 
-    ResponseValidator.assertExactStatus(response, context, 200);
-    const body = await response.json();
-    expect(body.token).toBeUndefined();
-    expect(body.reason).toBe('Bad credentials');
-  });
+  test(
+    'returns Bad credentials for invalid login',
+    { tag: ['@regression', '@auth'] },
+    async ({ authClient }) => {
+      const context = apiContext('invalid login', 'POST', '/auth');
 
-  test('does not return token when password is missing', async ({ authClient }) => {
-    const context = { testName: 'missing password', method: 'POST', endpoint: '/auth' };
-    const response = await authClient.postAuth({ username: env.username });
+      const response = await test.step('Send POST /auth with invalid credentials', async () =>
+        authClient.postAuth({
+          username: env.invalidUsername,
+          password: env.invalidPassword,
+        }),
+      );
 
-    ResponseValidator.assertExactStatus(response, context, 200);
-    const body = await response.json();
-    expect(body.token).toBeUndefined();
-  });
+      await test.step('Assert status and failure reason', async () => {
+        await ResponseValidator.assertExactStatus(response, context, 200);
+        const body = await response.json();
+        const responseBody = JSON.stringify(body);
+        AuthValidator.assertNoToken(body as Record<string, unknown>, context, responseBody);
+        AuthValidator.assertFailureReason(body, context, 'Bad credentials', responseBody);
+      });
+    },
+  );
+
+  test(
+    'does not return token when password is missing',
+    { tag: ['@regression', '@auth'] },
+    async ({ authClient }) => {
+      const context = apiContext('missing password', 'POST', '/auth');
+
+      const response = await test.step('Send POST /auth without password', async () =>
+        authClient.postAuth({ username: env.username }),
+      );
+
+      await test.step('Assert status and missing token', async () => {
+        await ResponseValidator.assertExactStatus(response, context, 200);
+        const body = await response.json();
+        AuthValidator.assertNoToken(
+          body as Record<string, unknown>,
+          context,
+          JSON.stringify(body),
+        );
+      });
+    },
+  );
 });

@@ -6,16 +6,24 @@
   "scripts": {
     "test": "playwright test",
     "test:report": "playwright test --reporter=html && playwright show-report",
-    "test:headed": "playwright test --headed",
     "test:ping": "playwright test tests/ping",
     "test:auth": "playwright test tests/auth",
     "test:booking": "playwright test tests/booking",
+    "test:regression": "playwright test --grep @regression",
+    "test:healthcheck": "playwright test --grep @healthcheck",
+    "test:createbooking": "playwright test --grep @createbooking",
+    "test:getbooking": "playwright test --grep @getbooking",
+    "test:getbookingids": "playwright test --grep @getbookingids",
+    "test:updatebooking": "playwright test --grep @updatebooking",
+    "test:patchbooking": "playwright test --grep @patchbooking",
+    "test:deletebooking": "playwright test --grep @deletebooking",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@playwright/test": "^1.51.0",
     "@types/node": "^22.13.0",
     "dotenv": "^18.0.1",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "zod": "^3.24.2"
   }
 }
